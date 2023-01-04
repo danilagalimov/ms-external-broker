@@ -1,0 +1,44 @@
+package com.broker.controller.advice;
+
+import com.broker.controller.TraderController;
+import com.broker.exception.TradeNotFoundException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+import java.util.stream.Collectors;
+
+@ControllerAdvice(basePackageClasses = {TraderController.class})
+public class TradeControllerExceptionHandler extends ResponseEntityExceptionHandler {
+    private final String tradeNotFoundMessage;
+
+    public TradeControllerExceptionHandler(@Value("${service.message.trade.not.found}") String tradeNotFoundMessage) {
+        this.tradeNotFoundMessage = tradeNotFoundMessage;
+    }
+
+    @ExceptionHandler({TradeNotFoundException.class})
+    protected ResponseEntity<Object> handleNotFound(TradeNotFoundException ex, WebRequest request) {
+        return handleExceptionInternal(ex, tradeNotFoundMessage, new HttpHeaders(), HttpStatus.NOT_FOUND, request);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        String bodyOfResponse = ex.getBindingResult().getFieldErrors().stream()
+                .map(TradeControllerExceptionHandler::formatFieldError)
+                .collect(Collectors.joining("\n"));
+
+        return handleExceptionInternal(ex, bodyOfResponse, headers, status, request);
+    }
+
+    private static String formatFieldError(FieldError e) {
+        return String.format("%s %s", e.getField(), e.getDefaultMessage());
+    }
+}
