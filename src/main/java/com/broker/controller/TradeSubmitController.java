@@ -13,24 +13,20 @@ import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
-@RequestMapping(TradeSubmitController.BASE_API_URL)
+@RequestMapping("/api")
 public class TradeSubmitController {
-    protected static final String BASE_API_URL = "/api";
-    private static final String TRADE_SELL_URL = "/sell";
-    private static final String TRADE_BUY_URL = "/buy";
-
     private final TradeService tradeService;
 
     public TradeSubmitController(TradeService tradeService) {
         this.tradeService = tradeService;
     }
 
-    @PostMapping(TRADE_SELL_URL)
+    @PostMapping("/sell")
     public ResponseEntity<Void> sell(@RequestBody @Valid CreateTradeParam createTradeParam, UriComponentsBuilder uriBuilder) {
         return submitTrade(createTradeParam, uriBuilder, BrokerTradeSide.SELL);
     }
 
-    @PostMapping(TRADE_BUY_URL)
+    @PostMapping("/buy")
     public ResponseEntity<Void> buy(@RequestBody @Valid CreateTradeParam createTradeParam, UriComponentsBuilder uriBuilder) {
         return submitTrade(createTradeParam, uriBuilder, BrokerTradeSide.BUY);
     }
@@ -42,7 +38,7 @@ public class TradeSubmitController {
         Trade trade = tradeService.submitTrade(createTradeParam, tradeSide);
 
         UriComponents uriComponents = uriBuilder
-                .path(BASE_API_URL)
+                .path(TradeViewController.BASE_API_URL)
                 .path(TradeViewController.TRADE_BY_TRADE_ID_URL)
                 .buildAndExpand(trade.getId());
 

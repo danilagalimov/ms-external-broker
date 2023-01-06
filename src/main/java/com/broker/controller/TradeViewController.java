@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(TradeViewController.BASE_API_URL)
 public class TradeViewController {
     protected static final String BASE_API_URL = "/api";
-    private static final String ALL_TRADES_URL = "/trades";
     protected static final String TRADE_BY_TRADE_ID_URL = "/trades/{tradeId}";
-    private static final String TRADE_STATUS_BY_TRADE_ID_URL = "/trades/{tradeId}/status";
 
     private final TradeService tradeService;
 
@@ -22,7 +20,7 @@ public class TradeViewController {
         this.tradeService = tradeService;
     }
 
-    @GetMapping(ALL_TRADES_URL)
+    @GetMapping("/trades")
     public Iterable<Trade> findAll() {
         return tradeService.findAll();
     }
@@ -32,7 +30,7 @@ public class TradeViewController {
         return tradeService.findById(tradeId);
     }
 
-    @GetMapping(TRADE_STATUS_BY_TRADE_ID_URL)
+    @GetMapping("/trades/{tradeId}/status")
     public TradeStatusOnly findStatusById(@PathVariable String tradeId) {
         return tradeService.findStatusById(tradeId);
     }
