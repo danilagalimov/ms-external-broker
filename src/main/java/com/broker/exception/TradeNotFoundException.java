@@ -1,5 +1,4 @@
 package com.broker.exception;
 
-public class TradeNotFoundException extends RuntimeException {
-
+public class TradeNotFoundException extends Exception {
 }

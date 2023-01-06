@@ -33,13 +33,15 @@ public class TradeService {
     }
 
     @Transactional(Transactional.TxType.SUPPORTS)
-    public Trade findById(String tradeId) {
-        return tradeRepository.findById(UUID.fromString(tradeId), Trade.class).orElseThrow(TradeNotFoundException::new);
+    public Trade findById(String tradeId) throws TradeNotFoundException {
+        return tradeRepository.findById(UUID.fromString(tradeId), Trade.class)
+                        .orElseThrow(TradeNotFoundException::new);
     }
 
     @Transactional(Transactional.TxType.SUPPORTS)
-    public TradeStatusOnly findStatusById(String tradeId) {
-        return tradeRepository.findById(UUID.fromString(tradeId), TradeStatusOnly.class).orElseThrow(TradeNotFoundException::new);
+    public TradeStatusOnly findStatusById(String tradeId) throws TradeNotFoundException {
+        return tradeRepository.findById(UUID.fromString(tradeId), TradeStatusOnly.class)
+                        .orElseThrow(TradeNotFoundException::new);
     }
 
 

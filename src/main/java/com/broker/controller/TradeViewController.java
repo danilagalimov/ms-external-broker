@@ -2,6 +2,7 @@ package com.broker.controller;
 
 import com.broker.data.Trade;
 import com.broker.data.TradeStatusOnly;
+import com.broker.exception.TradeNotFoundException;
 import com.broker.service.TradeService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,12 +27,12 @@ public class TradeViewController {
     }
 
     @GetMapping(TRADE_BY_TRADE_ID_URL)
-    public Trade findTradeById(@PathVariable String tradeId) {
+    public Trade findTradeById(@PathVariable String tradeId) throws TradeNotFoundException {
         return tradeService.findById(tradeId);
     }
 
     @GetMapping("/trades/{tradeId}/status")
-    public TradeStatusOnly findStatusById(@PathVariable String tradeId) {
+    public TradeStatusOnly findStatusById(@PathVariable String tradeId) throws TradeNotFoundException {
         return tradeService.findStatusById(tradeId);
     }
 
