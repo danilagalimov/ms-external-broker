@@ -16,7 +16,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.util.stream.Collectors;
 
-@ControllerAdvice(basePackageClasses = {TraderController.class})
+@ControllerAdvice(assignableTypes = {TraderController.class})
 public class TradeControllerExceptionHandler extends ResponseEntityExceptionHandler {
     private final String tradeNotFoundMessage;
 
