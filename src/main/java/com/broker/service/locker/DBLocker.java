@@ -10,10 +10,15 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
+/**
+ * Scalable solution for locking (stores locks in DB)
+ */
 @Service
 @Profile("!singleInstanceOnly")
 public class DBLocker implements Locker {
     private final LockRepository lockRepository;
+
+    // Dummy future with empty cancel method (caller expects we may be able to cancel it)
     private final Future<?> dummy = new CompletableFuture<>() {
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {

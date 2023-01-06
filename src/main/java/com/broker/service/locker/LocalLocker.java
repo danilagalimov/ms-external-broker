@@ -8,6 +8,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
+/**
+ * Not scalable but fast locking solution.
+ * Can only be used  when service is expected to be run on single instance.
+ */
 @Service
 @Profile("singleInstanceOnly")
 public class LocalLocker implements Locker {

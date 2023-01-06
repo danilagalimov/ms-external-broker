@@ -9,6 +9,7 @@ import com.broker.external.ExternalBroker;
 import com.broker.repository.TradeRepository;
 import com.broker.service.locker.Locker;
 import jakarta.transaction.Transactional;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Component
+@Log4j2
 public class TradeBrokerService {
     private final TradeRepository tradeRepository;
     private final ScheduledExecutorService scheduledExecutorService;
@@ -60,13 +62,18 @@ public class TradeBrokerService {
     public void addBrokerRequest(Trade trade) {
         UUID tradeId = trade.getId();
 
+        // possible timeout callback
         Future<?> taskTimeoutFuture = scheduledExecutorService.schedule(() -> {
+                    log.debug("Timed out for trade {}", tradeId);
+
+                    // need to obtain the lock to be sure only one executor
                     if (null != locker.getSinglePermit(tradeId)) {
                         brokerResponseCallbackService.timeout(tradeId);
                     }
                 },
                 timeout.toNanos(), TimeUnit.NANOSECONDS);
 
+        log.debug("Adding lock for trade {}", tradeId);
         locker.addTrade(tradeId, taskTimeoutFuture);
 
         externalBroker.execute(new BrokerTrade(tradeId, trade.getSymbol(), trade.getQuantity(), trade.getSide(), trade.getPrice()));

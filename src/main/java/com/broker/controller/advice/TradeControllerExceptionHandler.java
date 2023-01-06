@@ -17,6 +17,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.util.stream.Collectors;
 
+/**
+ *  Trade controllers exception handler. Handles validation and not found exceptions
+ */
 @ControllerAdvice(assignableTypes = {TradeSubmitController.class, TradeViewController.class})
 public class TradeControllerExceptionHandler extends ResponseEntityExceptionHandler {
     private final String tradeNotFoundMessage;
@@ -30,6 +33,9 @@ public class TradeControllerExceptionHandler extends ResponseEntityExceptionHand
         return handleExceptionInternal(ex, tradeNotFoundMessage, new HttpHeaders(), HttpStatus.NOT_FOUND, request);
     }
 
+    /**
+     * Overridden to provide better validation messages
+     */
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         String bodyOfResponse = ex.getBindingResult().getFieldErrors().stream()
