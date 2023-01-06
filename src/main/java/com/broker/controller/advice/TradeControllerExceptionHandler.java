@@ -1,6 +1,7 @@
 package com.broker.controller.advice;
 
-import com.broker.controller.TraderController;
+import com.broker.controller.TradeSubmitController;
+import com.broker.controller.TradeViewController;
 import com.broker.exception.TradeNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -16,7 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.util.stream.Collectors;
 
-@ControllerAdvice(assignableTypes = {TraderController.class})
+@ControllerAdvice(assignableTypes = {TradeSubmitController.class, TradeViewController.class})
 public class TradeControllerExceptionHandler extends ResponseEntityExceptionHandler {
     private final String tradeNotFoundMessage;
 
