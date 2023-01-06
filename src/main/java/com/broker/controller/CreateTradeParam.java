@@ -4,11 +4,11 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
-import lombok.Data;
+import lombok.Value;
 
 import java.math.BigDecimal;
 
-@Data
+@Value
 public class CreateTradeParam {
     private static final String QUANTIY_ERROR_MESSAGE = "must be greater than 0 and less than or equal to 1M";
     private static final String SYMBOL_ERROR_MESSAGE = "valid values: USD/JPY, EUR/USD";
