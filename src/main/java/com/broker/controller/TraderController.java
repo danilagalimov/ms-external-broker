@@ -28,7 +28,6 @@ public class TraderController {
     @PostMapping(TRADE_BUY_SELL_URL)
     public ResponseEntity<Void> doBuySell(@RequestBody @Valid CreateTradeParam createTradeParam, @PathVariable String tradeType, UriComponentsBuilder uriBuilder) {
         Trade trade = tradeService.submitTrade(createTradeParam, BrokerTradeSide.valueOf(tradeType.toUpperCase()));
-        tradeService.addBrokerRequest(trade);
 
         UriComponents uriComponents = uriBuilder
                 .path(BASE_API_URL)
