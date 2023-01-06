@@ -20,12 +20,12 @@ public class Trade {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    UUID id;
-    String symbol;
-    long quantity;
-    BrokerTradeSide side;
-    BigDecimal price;
+    private UUID id;
+    private String symbol;
+    private long quantity;
+    private BrokerTradeSide side;
+    private BigDecimal price;
 
-    ExecutionStatus status;
-    String reason;
+    private ExecutionStatus status;
+    private String reason;
 }
