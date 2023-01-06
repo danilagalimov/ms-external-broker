@@ -39,6 +39,6 @@ public class TradeControllerExceptionHandler extends ResponseEntityExceptionHand
     }
 
     private static String formatFieldError(FieldError e) {
-        return String.format("%s %s", e.getField(), e.getDefaultMessage());
+        return e.getField() + " " + e.getDefaultMessage();
     }
 }
