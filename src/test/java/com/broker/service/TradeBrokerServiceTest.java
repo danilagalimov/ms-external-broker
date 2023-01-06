@@ -24,8 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -71,6 +70,7 @@ class TradeBrokerServiceTest {
         assertThat(trade.getStatus(), is(ExecutionStatus.PENDING_EXECUTION));
         assertThat(trade.getPrice(), is(PRICE));
         assertThat(trade.getSide(), is(BrokerTradeSide.SELL));
+        assertThat(trade.getTimestamp(), is(notNullValue()));
     }
 
     @Test

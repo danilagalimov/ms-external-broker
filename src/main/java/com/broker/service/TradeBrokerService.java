@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -52,6 +53,7 @@ public class TradeBrokerService {
         trade.setQuantity(createTradeParam.getQuantity());
 
         trade.setStatus(ExecutionStatus.PENDING_EXECUTION);
+        trade.setTimestamp(LocalDateTime.now());
 
         trade = tradeRepository.save(trade);
 

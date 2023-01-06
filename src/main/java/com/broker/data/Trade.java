@@ -10,6 +10,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -28,4 +29,5 @@ public class Trade {
 
     private ExecutionStatus status;
     private String reason;
+    private LocalDateTime timestamp;
 }
