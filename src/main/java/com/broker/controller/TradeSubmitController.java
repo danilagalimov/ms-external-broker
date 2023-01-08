@@ -35,6 +35,7 @@ public class TradeSubmitController {
             CreateTradeParam createTradeParam,
             UriComponentsBuilder uriBuilder,
             BrokerTradeSide tradeSide) {
+
         Trade trade = tradeService.submitTrade(createTradeParam, tradeSide);
 
         UriComponents uriComponents = uriBuilder

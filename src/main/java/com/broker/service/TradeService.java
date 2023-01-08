@@ -74,6 +74,7 @@ public class TradeService {
         return trade -> {
             if (trade.getTimestamp().isBefore(lastAllowedTime) && trade.getStatus() == ExecutionStatus.PENDING_EXECUTION) {
                 log.debug("Marking trade {} as timed out", trade.getId());
+
                 trade.setStatus(ExecutionStatus.NOT_EXECUTED);
                 trade.setReason(tradeTimeoutService.getTradeTimeoutReason());
             }
