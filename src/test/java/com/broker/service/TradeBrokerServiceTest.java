@@ -7,8 +7,6 @@ import com.broker.external.BrokerTrade;
 import com.broker.external.BrokerTradeSide;
 import com.broker.external.ExternalBroker;
 import com.broker.repository.TradeRepository;
-import com.broker.service.locker.Locker;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -17,16 +15,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,20 +33,7 @@ class TradeBrokerServiceTest {
     @Mock
     private  TradeRepository tradeRepository;
     @Mock
-    private  ScheduledExecutorService scheduledExecutorService;
-    @Mock
-    private  Locker locker;
-    @Mock
     private  ExternalBroker externalBroker;
-    @Mock
-    private  BrokerResponseCallbackService brokerResponseCallbackService;
-
-    private final Duration duration = Duration.ofSeconds(33, 44);
-
-    @BeforeEach
-    void setUp() {
-        testedInstance = new TradeBrokerService(tradeRepository, scheduledExecutorService, locker, externalBroker, brokerResponseCallbackService, duration);
-    }
 
     @Test
     void testCreateTrade() {
@@ -87,11 +67,6 @@ class TradeBrokerServiceTest {
 
         testedInstance.addBrokerRequest(trade);
 
-        ArgumentCaptor<Runnable> future = ArgumentCaptor.forClass(Runnable.class);
-
-        verify(scheduledExecutorService).schedule(future.capture(), eq(duration.toNanos()), eq(TimeUnit.NANOSECONDS));
-        verify(locker).addTrade(eq(trade.getId()), any());
-
         ArgumentCaptor<BrokerTrade> argument = ArgumentCaptor.forClass(BrokerTrade.class);
 
         verify(externalBroker).execute(argument.capture());
@@ -104,13 +79,6 @@ class TradeBrokerServiceTest {
         assertThat(brokerTrade.getSide(), is(BrokerTradeSide.BUY));
         assertThat(brokerTrade.getQuantity(), is(QUANTITY));
 
-        verifyNoMoreInteractions(brokerResponseCallbackService);
-
-        future.getValue().run();
-        verifyNoInteractions(brokerResponseCallbackService);
-
-        when(locker.getSinglePermit(trade.getId())).thenReturn(new CompletableFuture<>());
-        future.getValue().run();
-        verify(brokerResponseCallbackService).timeout(trade.getId());
+        verifyNoMoreInteractions(externalBroker);
     }
 }

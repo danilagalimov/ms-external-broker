@@ -1,6 +1,7 @@
 package com.broker.service;
 
 import com.broker.controller.CreateTradeParam;
+import com.broker.data.ExecutionStatus;
 import com.broker.data.Trade;
 import com.broker.data.TradeStatusOnly;
 import com.broker.exception.TradeNotFoundException;
@@ -13,19 +14,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.Collections;
+import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TradeServiceTest {
+    private static final String TIMEOUT_REASON = "timeout reason";
     @InjectMocks
     private TradeService testedInstance;
 
@@ -33,9 +36,8 @@ class TradeServiceTest {
     private  TradeRepository tradeRepository;
     @Mock
     private  TradeBrokerService tradeBrokerService;
-
     @Mock
-    private TradeStatusOnly status;
+    private TradeTimeoutService tradeTimeoutService;
 
     @Test
     void testSubmitTrade() {
@@ -53,24 +55,41 @@ class TradeServiceTest {
 
     @Test
     void testFindAll() {
-        Trade trade = new Trade();
-        when(tradeRepository.findAll()).thenReturn(Collections.nCopies(10, trade));
+        when(tradeTimeoutService.getLastAllowedTime()).thenReturn(LocalDateTime.MIN);
+        when(tradeTimeoutService.getTradeTimeoutReason()).thenReturn(TIMEOUT_REASON);
+
+        Trade executedTrade = createTradeWithStatus(ExecutionStatus.EXECUTED);
+        Trade notExecutedTrade = createTradeWithStatus(ExecutionStatus.NOT_EXECUTED);
+        Trade pendingTrade = createTradeWithStatus(ExecutionStatus.PENDING_EXECUTION);
+        when(tradeRepository.findAll()).thenReturn(Arrays.asList(executedTrade, notExecutedTrade, pendingTrade));
 
         Iterable<Trade> trades = testedInstance.findAll();
 
-        assertThat(trades, is(Collections.nCopies(10, trade)));
+        assertThat(trades, is(Arrays.asList(executedTrade, notExecutedTrade, pendingTrade)));
+
+        assertThat(notExecutedTrade.getStatus(), is(ExecutionStatus.NOT_EXECUTED));
+        assertThat(notExecutedTrade.getReason(), is(nullValue()));
+        assertThat(executedTrade.getStatus(), is(ExecutionStatus.EXECUTED));
+        assertThat(executedTrade.getReason(), is(nullValue()));
+        assertThat(pendingTrade.getStatus(), is(ExecutionStatus.PENDING_EXECUTION));
+        assertThat(pendingTrade.getReason(), is(nullValue()));
+
+        when(tradeTimeoutService.getLastAllowedTime()).thenReturn(LocalDateTime.MAX);
+
+        trades = testedInstance.findAll();
+
+        assertThat(trades, is(Arrays.asList(executedTrade, notExecutedTrade, pendingTrade)));
+        assertThat(notExecutedTrade.getStatus(), is(ExecutionStatus.NOT_EXECUTED));
+        assertThat(notExecutedTrade.getReason(), is(nullValue()));
+        assertThat(executedTrade.getStatus(), is(ExecutionStatus.EXECUTED));
+        assertThat(executedTrade.getReason(), is(nullValue()));
+        assertThat(pendingTrade.getStatus(), is(ExecutionStatus.NOT_EXECUTED));
+        assertThat(pendingTrade.getReason(), is(TIMEOUT_REASON));
     }
 
     @Test
     void testFindById() throws TradeNotFoundException {
-        UUID tradeId = UUID.randomUUID();
-        Trade trade = new Trade();
-
-        when(tradeRepository.findById(tradeId, Trade.class)).thenReturn(Optional.of(trade));
-
-        assertThat(testedInstance.findById(tradeId.toString()), is(trade));
-
-        when(tradeRepository.findById(any(), eq(Trade.class))).thenReturn(Optional.empty());
+        when(tradeRepository.findById(any())).thenReturn(Optional.empty());
 
         try {
             testedInstance.findById(UUID.randomUUID().toString());
@@ -78,16 +97,47 @@ class TradeServiceTest {
             throw new IllegalStateException("Should throw an exception");
         } catch (TradeNotFoundException expected) {
         }
+
+        when(tradeTimeoutService.getLastAllowedTime()).thenReturn(LocalDateTime.MIN);
+        when(tradeTimeoutService.getTradeTimeoutReason()).thenReturn(TIMEOUT_REASON);
+
+        Trade executedTrade = createTradeWithStatus(ExecutionStatus.EXECUTED);
+
+        when(tradeRepository.findById(executedTrade.getId())).thenReturn(Optional.of(executedTrade));
+        assertThat(testedInstance.findById(executedTrade.getId().toString()), is(executedTrade));
+        assertThat(executedTrade.getStatus(), is(ExecutionStatus.EXECUTED));
+        assertThat(executedTrade.getReason(), is(nullValue()));
+
+        Trade notExecutedTrade = createTradeWithStatus(ExecutionStatus.NOT_EXECUTED);
+        when(tradeRepository.findById(notExecutedTrade.getId())).thenReturn(Optional.of(notExecutedTrade));
+        assertThat(testedInstance.findById(notExecutedTrade.getId().toString()), is(notExecutedTrade));
+        assertThat(notExecutedTrade.getStatus(), is(ExecutionStatus.NOT_EXECUTED));
+        assertThat(notExecutedTrade.getReason(), is(nullValue()));
+
+        Trade pendingTrade = createTradeWithStatus(ExecutionStatus.PENDING_EXECUTION);
+        when(tradeRepository.findById(pendingTrade.getId())).thenReturn(Optional.of(pendingTrade));
+        assertThat(testedInstance.findById(pendingTrade.getId().toString()), is(pendingTrade));
+        assertThat(pendingTrade.getStatus(), is(ExecutionStatus.PENDING_EXECUTION));
+        assertThat(pendingTrade.getReason(), is(nullValue()));
+
+        when(tradeTimeoutService.getLastAllowedTime()).thenReturn(LocalDateTime.MAX);
+
+        assertThat(testedInstance.findById(executedTrade.getId().toString()), is(executedTrade));
+        assertThat(executedTrade.getStatus(), is(ExecutionStatus.EXECUTED));
+        assertThat(executedTrade.getReason(), is(nullValue()));
+
+        assertThat(testedInstance.findById(notExecutedTrade.getId().toString()), is(notExecutedTrade));
+        assertThat(notExecutedTrade.getStatus(), is(ExecutionStatus.NOT_EXECUTED));
+        assertThat(notExecutedTrade.getReason(), is(nullValue()));
+
+        assertThat(testedInstance.findById(pendingTrade.getId().toString()), is(pendingTrade));
+        assertThat(pendingTrade.getStatus(), is(ExecutionStatus.NOT_EXECUTED));
+        assertThat(pendingTrade.getReason(), is(TIMEOUT_REASON));
     }
 
     @Test
     void testFindStatusById() throws TradeNotFoundException {
-        UUID tradeId = UUID.randomUUID();
-        when(tradeRepository.findById(tradeId, TradeStatusOnly.class)).thenReturn(Optional.of(status));
-
-        assertThat(testedInstance.findStatusById(tradeId.toString()), is(status));
-
-        when(tradeRepository.findById(any(), eq(TradeStatusOnly.class))).thenReturn(Optional.empty());
+        when(tradeRepository.findById(any())).thenReturn(Optional.empty());
 
         try {
             testedInstance.findStatusById(UUID.randomUUID().toString());
@@ -96,5 +146,53 @@ class TradeServiceTest {
         } catch (TradeNotFoundException expected) {
         }
 
+        when(tradeTimeoutService.getLastAllowedTime()).thenReturn(LocalDateTime.MIN);
+        when(tradeTimeoutService.getTradeTimeoutReason()).thenReturn(TIMEOUT_REASON);
+
+        Trade executedTrade = createTradeWithStatus(ExecutionStatus.EXECUTED);
+
+        when(tradeRepository.findById(executedTrade.getId())).thenReturn(Optional.of(executedTrade));
+        assertThat(testedInstance.findStatusById(executedTrade.getId().toString()), is(new TradeStatusOnly(ExecutionStatus.EXECUTED)));
+        assertThat(executedTrade.getStatus(), is(ExecutionStatus.EXECUTED));
+        assertThat(executedTrade.getReason(), is(nullValue()));
+
+        Trade notExecutedTrade = createTradeWithStatus(ExecutionStatus.NOT_EXECUTED);
+        when(tradeRepository.findById(notExecutedTrade.getId())).thenReturn(Optional.of(notExecutedTrade));
+        assertThat(testedInstance.findStatusById(notExecutedTrade.getId().toString()), is(new TradeStatusOnly(ExecutionStatus.NOT_EXECUTED)));
+        assertThat(notExecutedTrade.getStatus(), is(ExecutionStatus.NOT_EXECUTED));
+        assertThat(notExecutedTrade.getReason(), is(nullValue()));
+
+        Trade pendingTrade = createTradeWithStatus(ExecutionStatus.PENDING_EXECUTION);
+        when(tradeRepository.findById(pendingTrade.getId())).thenReturn(Optional.of(pendingTrade));
+        assertThat(testedInstance.findStatusById(pendingTrade.getId().toString()), is(new TradeStatusOnly(ExecutionStatus.PENDING_EXECUTION)));
+        assertThat(pendingTrade.getStatus(), is(ExecutionStatus.PENDING_EXECUTION));
+        assertThat(pendingTrade.getReason(), is(nullValue()));
+
+        when(tradeTimeoutService.getLastAllowedTime()).thenReturn(LocalDateTime.MAX);
+
+        assertThat(testedInstance.findStatusById(executedTrade.getId().toString()), is(new TradeStatusOnly(ExecutionStatus.EXECUTED)));
+        assertThat(executedTrade.getStatus(), is(ExecutionStatus.EXECUTED));
+        assertThat(executedTrade.getReason(), is(nullValue()));
+
+        assertThat(testedInstance.findStatusById(notExecutedTrade.getId().toString()), is(new TradeStatusOnly(ExecutionStatus.NOT_EXECUTED)));
+        assertThat(notExecutedTrade.getStatus(), is(ExecutionStatus.NOT_EXECUTED));
+        assertThat(notExecutedTrade.getReason(), is(nullValue()));
+
+        assertThat(testedInstance.findStatusById(pendingTrade.getId().toString()), is(new TradeStatusOnly(ExecutionStatus.NOT_EXECUTED)));
+        assertThat(pendingTrade.getStatus(), is(ExecutionStatus.NOT_EXECUTED));
+        assertThat(pendingTrade.getReason(), is(TIMEOUT_REASON));
+
     }
+
+    private Trade createTradeWithStatus(ExecutionStatus status) {
+        Trade trade = new Trade();
+
+        trade.setId(UUID.randomUUID());
+
+        trade.setTimestamp(LocalDateTime.now());
+        trade.setStatus(status);
+
+        return trade;
+    }
+
 }

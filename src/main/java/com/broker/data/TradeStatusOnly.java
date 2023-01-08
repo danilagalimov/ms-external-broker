@@ -1,5 +1,8 @@
 package com.broker.data;
 
-public interface TradeStatusOnly {
-    ExecutionStatus getStatus();
+import lombok.Value;
+
+@Value
+public class TradeStatusOnly {
+    ExecutionStatus status;
 }

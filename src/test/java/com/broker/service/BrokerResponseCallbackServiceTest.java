@@ -2,15 +2,14 @@ package com.broker.service;
 
 import com.broker.data.ExecutionStatus;
 import com.broker.repository.TradeRepository;
-import com.broker.service.locker.Locker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
-import java.util.concurrent.Future;
 
 import static org.mockito.Mockito.*;
 
@@ -21,56 +20,35 @@ class BrokerResponseCallbackServiceTest {
     private BrokerResponseCallbackService testedInstance;
 
     @Mock
-    private Locker locker;
-    @Mock
     private TradeRepository tradeRepository;
 
     @Mock
-    private Future future;
+    private TradeTimeoutService tradeTimeoutService;
 
 
     @Test
     void testSuccessful() {
-        UUID tradeId = UUID.randomUUID();
+        LocalDateTime executionTime = LocalDateTime.MIN;
+        when(tradeTimeoutService.getLastAllowedTime()).thenReturn(executionTime);
 
-        when(locker.getSinglePermit(tradeId)).thenReturn(future);
+        UUID tradeId = UUID.randomUUID();
 
         testedInstance.successful(tradeId);
 
-        verify(tradeRepository).updateTradeStatus(ExecutionStatus.EXECUTED, tradeId);
+        verify(tradeRepository).updateTradeStatus(ExecutionStatus.EXECUTED, tradeId, ExecutionStatus.PENDING_EXECUTION, executionTime);
         verifyNoMoreInteractions(tradeRepository);
-
-        verify(future).cancel(false);
-
-        testedInstance.successful(UUID.randomUUID());
-        verifyNoMoreInteractions(tradeRepository, future);
     }
 
     @Test
     void testUnsuccessful() {
-        UUID tradeId = UUID.randomUUID();
+        LocalDateTime executionTime = LocalDateTime.MAX;
+        when(tradeTimeoutService.getLastAllowedTime()).thenReturn(executionTime);
 
-        when(locker.getSinglePermit(tradeId)).thenReturn(future);
+        UUID tradeId = UUID.randomUUID();
 
         testedInstance.unsuccessful(tradeId, UNSUCCESSFUL_REASON);
 
-        verify(tradeRepository).updateTradeStatusAndReason(ExecutionStatus.NOT_EXECUTED, UNSUCCESSFUL_REASON, tradeId);
+        verify(tradeRepository).updateTradeStatusAndReason(ExecutionStatus.NOT_EXECUTED, UNSUCCESSFUL_REASON, tradeId, ExecutionStatus.PENDING_EXECUTION, executionTime);
         verifyNoMoreInteractions(tradeRepository);
-
-        verify(future).cancel(false);
-
-        testedInstance.unsuccessful(UUID.randomUUID(), UNSUCCESSFUL_REASON);
-        verifyNoMoreInteractions(tradeRepository, future);
-
-    }
-
-    @Test
-    void testTimeout() {
-        UUID tradeId = UUID.randomUUID();
-        testedInstance.timeout(tradeId);
-
-        verify(tradeRepository).updateTradeStatusAndReason(ExecutionStatus.NOT_EXECUTED, null, tradeId);
-
-        verifyNoMoreInteractions(tradeRepository, future, locker);
     }
 }
