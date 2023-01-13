@@ -19,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -78,7 +77,9 @@ class TradeBrokerServiceTest {
 
         Trade trade = new Trade();
 
-        trade.setId(UUID.randomUUID());
+        UUID tradeId = UUID.randomUUID();
+
+        trade.setId(tradeId);
         trade.setQuantity(QUANTITY);
         trade.setSymbol(SYMBOL);
         trade.setStatus(ExecutionStatus.EXECUTED);
@@ -90,7 +91,7 @@ class TradeBrokerServiceTest {
         ArgumentCaptor<Runnable> future = ArgumentCaptor.forClass(Runnable.class);
 
         verify(scheduledExecutorService).schedule(future.capture(), eq(duration.toNanos()), eq(TimeUnit.NANOSECONDS));
-        verify(locker).addTrade(eq(trade.getId()), any());
+        verify(locker).addTrade(tradeId);
 
         ArgumentCaptor<BrokerTrade> argument = ArgumentCaptor.forClass(BrokerTrade.class);
 
@@ -98,7 +99,7 @@ class TradeBrokerServiceTest {
 
         BrokerTrade brokerTrade = argument.getValue();
 
-        assertThat(brokerTrade.getId(), is(trade.getId()));
+        assertThat(brokerTrade.getId(), is(tradeId));
         assertThat(brokerTrade.getSymbol(), is(SYMBOL));
         assertThat(brokerTrade.getPrice(), is(PRICE));
         assertThat(brokerTrade.getSide(), is(BrokerTradeSide.BUY));
@@ -106,10 +107,6 @@ class TradeBrokerServiceTest {
 
         verifyNoMoreInteractions(brokerResponseCallbackService);
 
-        future.getValue().run();
-        verifyNoInteractions(brokerResponseCallbackService);
-
-        when(locker.getSinglePermit(trade.getId())).thenReturn(new CompletableFuture<>());
         future.getValue().run();
         verify(brokerResponseCallbackService).timeout(trade.getId());
     }

@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
-import java.util.concurrent.Future;
 
 @Service
 @Log4j2
@@ -47,20 +46,20 @@ public class BrokerResponseCallbackService implements BrokerResponseCallback {
     @Transactional
     public void timeout(UUID tradeId) {
         log.debug("Trade {} timed out", tradeId);
-        tradeRepository.updateTradeStatusAndReason(ExecutionStatus.NOT_EXECUTED, tradeTimeoutReason, tradeId);
+        if (tryAcquireLock(tradeId)) {
+            tradeRepository.updateTradeStatusAndReason(ExecutionStatus.NOT_EXECUTED, tradeTimeoutReason, tradeId);
+        }
     }
 
     private boolean tryAcquireLock(UUID tradeId) {
-        Future<?> cancellationFuture = locker.getSinglePermit(tradeId);
+        boolean tradeLock = locker.getSinglePermit(tradeId);
 
-        if (null == cancellationFuture) {
+        if (!tradeLock) {
             log.debug("Failed to get lock for trade {}", tradeId);
-            return false;
+        } else {
+            log.debug("Successfully got lock for trade {}", tradeId);
         }
 
-        log.debug("Successfully got lock for trade {}", tradeId);
-        cancellationFuture.cancel(false);
-
-        return true;
+        return tradeLock;
     }
 }

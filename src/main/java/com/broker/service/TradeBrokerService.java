@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -64,21 +63,13 @@ public class TradeBrokerService {
     public void addBrokerRequest(Trade trade) {
         UUID tradeId = trade.getId();
 
-        // possible timeout callback
-        Future<?> taskTimeoutFuture = scheduledExecutorService.schedule(() -> {
-                    log.debug("Timed out for trade {}", tradeId);
-
-                    // need to obtain the lock to be sure only one executor
-                    if (null != locker.getSinglePermit(tradeId)) {
-                        brokerResponseCallbackService.timeout(tradeId);
-                    }
-                },
-                timeout.toNanos(), TimeUnit.NANOSECONDS);
-
         log.debug("Adding lock for trade {}", tradeId);
-        locker.addTrade(tradeId, taskTimeoutFuture);
+        locker.addTrade(tradeId);
 
         externalBroker.execute(new BrokerTrade(tradeId, trade.getSymbol(), trade.getQuantity(), trade.getSide(), trade.getPrice()));
+
+        // timeout callback
+        scheduledExecutorService.schedule(() -> brokerResponseCallbackService.timeout(tradeId), timeout.toNanos(), TimeUnit.NANOSECONDS);
     }
 
 }

@@ -1,10 +1,9 @@
 package com.broker.service.locker;
 
 import java.util.UUID;
-import java.util.concurrent.Future;
 
 public interface Locker {
-    void addTrade(UUID tradeId, Future<?> future);
+    void addTrade(UUID tradeId);
 
-    Future<?> getSinglePermit(UUID tradeId);
+    boolean getSinglePermit(UUID tradeId);
 }

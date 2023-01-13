@@ -10,10 +10,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,7 +30,7 @@ class DBLockerTest {
         when(lockRepository.save(lock.capture())).thenReturn(null);
 
         UUID tradeId = UUID.randomUUID();
-        testedInstance.addTrade(tradeId, new CompletableFuture<>());
+        testedInstance.addTrade(tradeId);
 
 
         verify(lockRepository).save(lock.getValue());
@@ -40,7 +40,7 @@ class DBLockerTest {
     void testGetSinglePermit() {
         UUID tradeId = UUID.randomUUID();
 
-        assertThat(testedInstance.getSinglePermit(tradeId), is(nullValue()));
+        assertThat(testedInstance.getSinglePermit(tradeId), is(false));
 
         when(lockRepository.removeById(tradeId)).thenReturn(1L);
         assertThat(testedInstance.getSinglePermit(tradeId), is(notNullValue()));
